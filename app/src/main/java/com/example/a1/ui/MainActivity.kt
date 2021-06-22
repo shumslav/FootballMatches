@@ -1,5 +1,6 @@
 package com.example.a1.ui
 
+import android.content.Intent
 import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
 import android.util.Log
@@ -13,8 +14,8 @@ import com.example.a1.R
 import com.example.a1.toFootballMath
 import com.example.a1.toMap
 import com.example.a1.ui.Adapters.MathesAdapter
-import com.mikepenz.materialdrawer.model.PrimaryDrawerItem
-import com.mikepenz.materialdrawer.model.ProfileDrawerItem
+import com.example.a1.ui.Fragments.MathFragment
+import com.mikepenz.materialdrawer.model.*
 import com.mikepenz.materialdrawer.model.interfaces.*
 import com.mikepenz.materialdrawer.widget.AccountHeaderView
 import com.mikepenz.materialdrawer.widget.MaterialDrawerSliderView
@@ -37,36 +38,11 @@ class MainActivity : AppCompatActivity() {
         slider = findViewById(R.id.slider)
         recycler = findViewById(R.id.math_recycler)
         recycler.layoutManager = LinearLayoutManager(this)
+        slider.isNestedScrollingEnabled = true
+        slider.isScrollContainer = true
 
 
-        val item1 = PrimaryDrawerItem().apply { nameText = "Mathes"; iconRes = R.drawable.small_ball; identifier = 1L
-        isSelectable = false}
         val toolbar = Toolbar(this)
-
-        val headerView = AccountHeaderView(this).apply {
-            attachToSliderView(slider) // attach to the slider
-            addProfiles(
-                ProfileDrawerItem().apply { nameText = "Mike Penz";
-                    descriptionText = "mikepenz@gmail.com";
-                    iconRes = R.drawable.ic_launcher_background;}
-            )
-            onAccountHeaderListener = { view, profile, current ->
-                // react to profile changes
-                false
-            }
-            withSavedInstance(savedInstanceState)
-        }
-
-        slider.itemAdapter.add(
-            item1
-        )
-
-        slider.onDrawerItemClickListener = {v: View?, item: IDrawerItem<*>, position: Int ->
-            when(item.identifier){
-                1L -> {true}
-                else -> {false}
-            }
-        }
         val mathes = mutableListOf<FootballMath>()
         thread {
             val client = OkHttpClient()
@@ -81,12 +57,25 @@ class MainActivity : AppCompatActivity() {
             val response = client.newCall(request).execute()
             val html = response.body!!.string()
             val b = JSONArray(html)
-            for(i in 0..b.length()-1){
+            for (i in 0..b.length() - 1) {
                 mathes.add(b.getJSONObject(i).toFootballMath())
             }
         }.join()
         val fragmentManager = supportFragmentManager
+        var date = ""
+        val lastTenMatches = mathes.take(10)
+        Log.i("Size", mathes.size.toString())
+        for (i in lastTenMatches.indices) {
+            val match = mathes[i]
+            if (date.isEmpty() || date != match.date.split("T")[0]) {
+                date = match.date.split("T")[0]
+                slider.itemAdapter.add(SectionDrawerItem().apply { nameText = date })
+            }
+            val item1 = PrimaryDrawerItem().apply {
+                nameText = match.title; iconRes = R.drawable.small_ball; identifier = i.toLong()
+                isSelectable = true}
+            slider.itemAdapter.add(item1)
+        }
         recycler.adapter = MathesAdapter(mathes, fragmentManager)
     }
-
 }

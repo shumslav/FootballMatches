@@ -45,7 +45,7 @@ class MathesAdapter(val mathes:MutableList<FootballMath>, val fragmentManager: F
         holder.mathCard.setOnClickListener {
             val math = MathFragment.newInstance(mathes[position])
             fragmentManager.beginTransaction()
-                .setCustomAnimations(R.anim.nav_default_pop_enter_anim,R.anim.nav_default_pop_exit_anim)
+                .setCustomAnimations(R.anim.nav_default_enter_anim,R.anim.nav_default_exit_anim)
                 .add(R.id.fragment_math_container,math,"math_fragment").addToBackStack(null).commit()
         }
     }
