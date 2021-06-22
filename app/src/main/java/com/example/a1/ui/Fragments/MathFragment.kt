@@ -7,7 +7,9 @@ import androidx.fragment.app.Fragment
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.webkit.WebChromeClient
 import android.webkit.WebView
+import android.widget.FrameLayout
 import android.widget.ImageView
 import android.widget.TextView
 import androidx.cardview.widget.CardView
@@ -27,10 +29,11 @@ class MathFragment : Fragment() {
 
     lateinit var mathFragmentScore:ImageView
     lateinit var mathFragmentCard:CardView
-    //lateinit var mathFragmentTeams:TextView
-    //lateinit var mathFragmentDate:TextView
-    //lateinit var mathFragmentTime:TextView
     lateinit var mathFragmentWeb:WebView
+    lateinit var fullScreenContainer:FrameLayout
+
+    var fullScreenView:View? = null
+    var fullScreenCallback: WebChromeClient.CustomViewCallback? = null
 
     companion object{
         fun newInstance(math:FootballMath):MathFragment{
@@ -59,6 +62,7 @@ class MathFragment : Fragment() {
         //mathFragmentTeams = view.findViewById(R.id.math_fragment_teams)
         //mathFragmentTime = view.findViewById(R.id.math_fragment_time)
         mathFragmentWeb = view.findViewById(R.id.math_fragment_web_video)
+        fullScreenContainer = view.findViewById(R.id.container_for_fullscreen)
         if (arguments!=null){
             val url = requireArguments().getString("mathEmbed","")
                 .split("src='")[1]
@@ -67,15 +71,33 @@ class MathFragment : Fragment() {
             Log.i("url",url)
             Picasso.get().load(requireArguments().getString("mathThumbnail","")).into(mathFragmentScore)
             val date = requireArguments().getString("mathDate")!!.split("T")
-            //mathFragmentDate.text = date[0]
-            //mathFragmentTime.text = date[1].split("+")[0]
-            //mathFragmentTeams.text = requireArguments().getString("mathTitle")
             mathFragmentWeb.setLayerType(View.LAYER_TYPE_HARDWARE, null)
             mathFragmentWeb.settings.apply {
                 this.javaScriptEnabled = true
                 this.domStorageEnabled = true
                 this.databaseEnabled = true
                 this.allowFileAccess = true
+            }
+            mathFragmentWeb.webChromeClient = object: WebChromeClient(){
+                override fun onShowCustomView(view: View?, callback: CustomViewCallback?) {
+                    mathFragmentWeb.visibility = View.GONE
+                    mathFragmentCard.visibility = View.GONE
+                    fullScreenContainer.visibility = View.VISIBLE
+                    fullScreenContainer.addView(view)
+
+                    fullScreenView = view
+                    fullScreenCallback = callback
+                }
+
+                override fun onHideCustomView() {
+                    fullScreenContainer.removeView(fullScreenView)
+                    fullScreenCallback!!.onCustomViewHidden()
+                    fullScreenView = null
+
+                    mathFragmentWeb.visibility = View.VISIBLE
+                    mathFragmentCard.visibility = View.VISIBLE
+                    fullScreenContainer.visibility = View.GONE
+                }
             }
             mathFragmentWeb.loadUrl(requireArguments().getString("mathUrl",""))
         }
